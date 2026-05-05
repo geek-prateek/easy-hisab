@@ -5,6 +5,44 @@ const typeLabels = Object.fromEntries(
   ENTRY_TYPE_OPTIONS.map((option) => [option.value, option.label]),
 );
 
+const shortTypeLabels = {
+  purchase: 'Purchase',
+  dispatch: 'Dispatch',
+};
+
+const emptyStateDateFormatter = new Intl.DateTimeFormat('en-GB', {
+  day: '2-digit',
+  month: 'short',
+  year: 'numeric',
+});
+
+function formatEmptyStateDate(dateText) {
+  const [year, month, day] = dateText.split('-').map(Number);
+  return emptyStateDateFormatter.format(new Date(Date.UTC(year, month - 1, day)));
+}
+
+function getEmptyStateMessage({ searchValue, filterDate, filterType }) {
+  const filters = [];
+
+  if (filterDate) {
+    filters.push(`on ${formatEmptyStateDate(filterDate)}`);
+  }
+
+  if (filterType) {
+    filters.push(`with ${shortTypeLabels[filterType] || typeLabels[filterType] || filterType}`);
+  }
+
+  if (searchValue.trim()) {
+    filters.push(`with "${searchValue.trim()}" product name`);
+  }
+
+  if (filters.length === 0) {
+    return 'No products found.';
+  }
+
+  return `No products found ${filters.join(' and ')}.`;
+}
+
 function DailyEntryList({
   entries,
   searchValue,
@@ -16,12 +54,18 @@ function DailyEntryList({
   onEdit,
   onDelete,
   onDownload,
+  isDownloading,
   onClearSearch,
   onClearFilterDate,
   summary,
   formatCurrency,
 }) {
   const itemLabel = summary.itemCount === 1 ? 'Item' : 'Items';
+  const emptyStateMessage = getEmptyStateMessage({
+    searchValue,
+    filterDate,
+    filterType,
+  });
 
   return (
     <section className="rounded-xl bg-white p-4 shadow-sm ring-1 ring-stone-200 sm:p-5">
@@ -81,8 +125,13 @@ function DailyEntryList({
           </label>
         </div>
 
-        <button className="report-download-button" type="button" onClick={onDownload}>
-          Download Excel Report
+        <button
+          className="report-download-button disabled:cursor-not-allowed disabled:bg-emerald-400 disabled:text-emerald-50"
+          type="button"
+          onClick={onDownload}
+          disabled={isDownloading}
+        >
+          {isDownloading ? 'Preparing Excel Report...' : 'Download Excel Report'}
         </button>
       </div>
 
@@ -100,7 +149,7 @@ function DailyEntryList({
 
         {entries.length === 0 ? (
           <div className="rounded-lg border border-dashed border-stone-300 px-4 py-6 text-center text-base text-stone-600">
-            No products found.
+            {emptyStateMessage}
           </div>
         ) : (
           entries.map((entry) => (

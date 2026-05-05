@@ -57,6 +57,7 @@ function App() {
   const [entryFilterType, setEntryFilterType] = useState('');
   const [editingEntryId, setEditingEntryId] = useState(null);
   const [notice, setNotice] = useState(null);
+  const [isDownloading, setIsDownloading] = useState(false);
 
   useEffect(() => {
     saveDailyEntries(dailyEntries);
@@ -236,47 +237,57 @@ function App() {
   }
 
   async function handleEntryDownload() {
-    const rows = [
-      [
-        { value: 'Date', fontWeight: 'bold' },
-        { value: 'Product', fontWeight: 'bold' },
-        { value: 'Type', fontWeight: 'bold' },
-        { value: 'Quantity', fontWeight: 'bold' },
-        { value: 'Price', fontWeight: 'bold' },
-        { value: 'GST', fontWeight: 'bold' },
-        { value: 'Final Amount', fontWeight: 'bold' },
-      ],
-      ...filteredDailyEntries.map((entry) => [
-        { type: Date, value: createExcelDate(entry.date), format: 'dd/mm/yyyy' },
-        { type: String, value: entry.productName },
-        { type: String, value: typeLabels[entry.type] },
-        { type: Number, value: entry.quantity },
-        { type: Number, value: entry.price },
-        { type: String, value: `${entry.gst}%` },
-        { type: Number, value: entry.finalAmount },
-      ]),
-      Array.from({ length: 7 }, () => ({ value: '' })),
-      [
-        {
-          value: 'Total',
-          fontWeight: 'bold',
-        },
-        { value: '' },
-        { value: '' },
-        { value: '' },
-        { value: '' },
-        { value: '' },
-        {
-          type: Number,
-          value: filteredEntriesSummary.grandTotal,
-          fontWeight: 'bold',
-        },
-      ],
-    ];
+    if (isDownloading) {
+      return;
+    }
 
-    await writeXlsxFile(rows, {
-      sheet: 'Daily Report',
-    }).toFile('daily-report.xlsx');
+    setIsDownloading(true);
+
+    try {
+      const rows = [
+        [
+          { value: 'Date', fontWeight: 'bold' },
+          { value: 'Product', fontWeight: 'bold' },
+          { value: 'Type', fontWeight: 'bold' },
+          { value: 'Quantity', fontWeight: 'bold' },
+          { value: 'Price', fontWeight: 'bold' },
+          { value: 'GST', fontWeight: 'bold' },
+          { value: 'Final Amount', fontWeight: 'bold' },
+        ],
+        ...filteredDailyEntries.map((entry) => [
+          { type: Date, value: createExcelDate(entry.date), format: 'dd/mm/yyyy' },
+          { type: String, value: entry.productName },
+          { type: String, value: typeLabels[entry.type] },
+          { type: Number, value: entry.quantity },
+          { type: Number, value: entry.price },
+          { type: String, value: `${entry.gst}%` },
+          { type: Number, value: entry.finalAmount },
+        ]),
+        Array.from({ length: 7 }, () => ({ value: '' })),
+        [
+          {
+            value: 'Total',
+            fontWeight: 'bold',
+          },
+          { value: '' },
+          { value: '' },
+          { value: '' },
+          { value: '' },
+          { value: '' },
+          {
+            type: Number,
+            value: filteredEntriesSummary.grandTotal,
+            fontWeight: 'bold',
+          },
+        ],
+      ];
+
+      await writeXlsxFile(rows, {
+        sheet: 'Daily Report',
+      }).toFile('daily-report.xlsx');
+    } finally {
+      setIsDownloading(false);
+    }
   }
 
   return (
@@ -330,6 +341,7 @@ function App() {
               onEdit={handleEntryEdit}
               onDelete={handleEntryDelete}
               onDownload={handleEntryDownload}
+              isDownloading={isDownloading}
               summary={filteredEntriesSummary}
               formatCurrency={currencyFormatter.format}
             />
