@@ -3,7 +3,7 @@ import writeXlsxFile from 'write-excel-file/browser';
 import DailyEntryForm from './components/DailyEntryForm';
 import DailyEntryList from './components/DailyEntryList';
 import { ENTRY_TYPE_OPTIONS } from './constants';
-import { loadDailyEntries, loadProducts, saveDailyEntries } from './utils/storage';
+import { loadDailyEntries, saveDailyEntries } from './utils/storage';
 
 function getTodayDate() {
   const today = new Date();
@@ -38,9 +38,18 @@ const fieldChecks = [
   ['gst', 'GST'],
 ];
 
+const currencyFormatter = new Intl.NumberFormat('en-IN', {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
+
+function createExcelDate(dateText) {
+  const [year, month, day] = dateText.split('-').map(Number);
+  return new Date(Date.UTC(year, month - 1, day));
+}
+
 function App() {
   const [activeTab, setActiveTab] = useState('daily');
-  const [savedProducts] = useState(() => loadProducts());
   const [dailyEntries, setDailyEntries] = useState(() => loadDailyEntries());
   const [dailyForm, setDailyForm] = useState(() => createEmptyDailyForm());
   const [entrySearchValue, setEntrySearchValue] = useState('');
@@ -65,24 +74,6 @@ function App() {
     return () => window.clearTimeout(timer);
   }, [message]);
 
-  const productNames = useMemo(() => {
-    const names = new Set();
-
-    savedProducts.forEach((product) => {
-      if (product.name?.trim()) {
-        names.add(product.name.trim());
-      }
-    });
-
-    dailyEntries.forEach((entry) => {
-      if (entry.productName?.trim()) {
-        names.add(entry.productName.trim());
-      }
-    });
-
-    return Array.from(names).sort((left, right) => left.localeCompare(right));
-  }, [dailyEntries, savedProducts]);
-
   const filteredDailyEntries = useMemo(() => {
     const searchText = entrySearchValue.trim().toLowerCase();
 
@@ -104,6 +95,16 @@ function App() {
       });
   }, [dailyEntries, entryFilterDate, entryFilterType, entrySearchValue]);
 
+  const filteredEntriesSummary = useMemo(() => (
+    filteredDailyEntries.reduce(
+      (summary, entry) => ({
+        itemCount: summary.itemCount + 1,
+        grandTotal: Number((summary.grandTotal + Number(entry.finalAmount || 0)).toFixed(2)),
+      }),
+      { itemCount: 0, grandTotal: 0 },
+    )
+  ), [filteredDailyEntries]);
+
   function resetDailyForm() {
     setDailyForm(createEmptyDailyForm());
     setEditingEntryId(null);
@@ -120,6 +121,13 @@ function App() {
     setDailyForm((currentForm) => ({
       ...currentForm,
       [name]: value,
+    }));
+  }
+
+  function handleDailyFieldClear(fieldName) {
+    setDailyForm((currentForm) => ({
+      ...currentForm,
+      [fieldName]: '',
     }));
   }
 
@@ -222,7 +230,7 @@ function App() {
         { value: 'Final Amount', fontWeight: 'bold' },
       ],
       ...filteredDailyEntries.map((entry) => [
-        { type: String, value: entry.date },
+        { type: Date, value: createExcelDate(entry.date), format: 'dd/mm/yyyy' },
         { type: String, value: entry.productName },
         { type: String, value: typeLabels[entry.type] },
         { type: Number, value: entry.quantity },
@@ -230,6 +238,23 @@ function App() {
         { type: String, value: `${entry.gst}%` },
         { type: Number, value: entry.finalAmount },
       ]),
+      Array.from({ length: 7 }, () => ({ value: '' })),
+      [
+        {
+          value: 'Total',
+          fontWeight: 'bold',
+        },
+        { value: '' },
+        { value: '' },
+        { value: '' },
+        { value: '' },
+        { value: '' },
+        {
+          type: Number,
+          value: filteredEntriesSummary.grandTotal,
+          fontWeight: 'bold',
+        },
+      ],
     ];
 
     await writeXlsxFile(rows, {
@@ -286,8 +311,8 @@ function App() {
           {activeTab === 'daily' ? (
             <DailyEntryForm
               form={dailyForm}
-              productNames={productNames}
               onChange={handleDailyChange}
+              onClearField={handleDailyFieldClear}
               onSubmit={handleDailySubmit}
             />
           ) : null}
@@ -301,9 +326,13 @@ function App() {
               onSearchChange={(event) => setEntrySearchValue(event.target.value)}
               onFilterDateChange={(event) => setEntryFilterDate(event.target.value)}
               onFilterTypeChange={(event) => setEntryFilterType(event.target.value)}
+              onClearSearch={() => setEntrySearchValue('')}
+              onClearFilterDate={() => setEntryFilterDate('')}
               onEdit={handleEntryEdit}
               onDelete={handleEntryDelete}
               onDownload={handleEntryDownload}
+              summary={filteredEntriesSummary}
+              formatCurrency={currencyFormatter.format}
             />
           ) : null}
         </div>

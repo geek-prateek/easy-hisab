@@ -1,4 +1,5 @@
 import { ENTRY_TYPE_OPTIONS } from '../constants';
+import ClearableField from './ClearableField';
 
 const typeLabels = Object.fromEntries(
   ENTRY_TYPE_OPTIONS.map((option) => [option.value, option.label]),
@@ -15,7 +16,13 @@ function DailyEntryList({
   onEdit,
   onDelete,
   onDownload,
+  onClearSearch,
+  onClearFilterDate,
+  summary,
+  formatCurrency,
 }) {
+  const itemLabel = summary.itemCount === 1 ? 'Item' : 'Items';
+
   return (
     <section className="rounded-xl bg-white p-4 shadow-sm ring-1 ring-stone-200 sm:p-5">
       <div className="mb-4 space-y-3">
@@ -24,24 +31,37 @@ function DailyEntryList({
         <div className="grid grid-cols-1 gap-3">
           <label className="block">
             <span className="field-label">Product Name</span>
-            <input
-              className="text-input"
-              type="text"
-              placeholder="Search product name"
-              value={searchValue}
-              onChange={onSearchChange}
-              autoComplete="off"
-            />
+            <ClearableField
+              hasValue={Boolean(searchValue)}
+              onClear={onClearSearch}
+              clearLabel="Clear product search"
+            >
+              <input
+                className="text-input clearable-input"
+                type="text"
+                placeholder="Search product name"
+                value={searchValue}
+                onChange={onSearchChange}
+                autoComplete="off"
+              />
+            </ClearableField>
           </label>
 
           <label className="block">
             <span className="field-label">Date</span>
-            <input
-              className="text-input"
-              type="date"
-              value={filterDate}
-              onChange={onFilterDateChange}
-            />
+            <ClearableField
+              hasValue={Boolean(filterDate)}
+              onClear={onClearFilterDate}
+              clearLabel="Clear date filter"
+              clearButtonClassName="right-12"
+            >
+              <input
+                className="text-input clearable-date-input"
+                type="date"
+                value={filterDate}
+                onChange={onFilterDateChange}
+              />
+            </ClearableField>
           </label>
 
           <label className="block">
@@ -64,6 +84,17 @@ function DailyEntryList({
         <button className="secondary-button w-full" type="button" onClick={onDownload}>
           Download Excel Report
         </button>
+
+        <div className="rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 shadow-sm">
+          <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+            <p className="text-sm font-semibold text-sky-900">
+              Grand Total ({summary.itemCount} {itemLabel})
+            </p>
+            <p className="text-2xl font-extrabold leading-none text-sky-950 sm:text-3xl">
+              Rs. {formatCurrency(summary.grandTotal)}
+            </p>
+          </div>
+        </div>
       </div>
 
       <div className="space-y-3">

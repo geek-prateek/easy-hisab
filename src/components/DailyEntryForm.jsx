@@ -1,10 +1,11 @@
 import { ENTRY_TYPE_OPTIONS, GST_OPTIONS } from '../constants';
+import ClearableField from './ClearableField';
 
 function DailyEntryForm({
   form,
-  productNames,
   onChange,
   onSubmit,
+  onClearField,
 }) {
   const quantity = Number(form.quantity || 0);
   const price = Number(form.price || 0);
@@ -23,34 +24,41 @@ function DailyEntryForm({
       <form className="space-y-4" onSubmit={onSubmit}>
         <label className="block">
           <span className="field-label">Date</span>
-          <input
-            className="text-input"
-            name="date"
-            type="date"
-            value={form.date}
-            onChange={onChange}
-            required
-          />
+          <ClearableField
+            hasValue={Boolean(form.date)}
+            onClear={() => onClearField('date')}
+            clearLabel="Clear date"
+            clearButtonClassName="right-12"
+          >
+            <input
+              className="text-input clearable-date-input"
+              name="date"
+              type="date"
+              value={form.date}
+              onChange={onChange}
+              required
+            />
+          </ClearableField>
         </label>
 
         <label className="block">
           <span className="field-label">Product Name</span>
-          <input
-            className="text-input"
-            name="productName"
-            type="text"
-            list="product-name-list"
-            value={form.productName}
-            onChange={onChange}
-            placeholder="Type or select product name"
-            autoComplete="off"
-            required
-          />
-          <datalist id="product-name-list">
-            {productNames.map((productName) => (
-              <option key={productName} value={productName} />
-            ))}
-          </datalist>
+          <ClearableField
+            hasValue={Boolean(form.productName)}
+            onClear={() => onClearField('productName')}
+            clearLabel="Clear product name"
+          >
+            <input
+              className="text-input clearable-input"
+              name="productName"
+              type="text"
+              value={form.productName}
+              onChange={onChange}
+              placeholder="Enter product name"
+              autoComplete="off"
+              required
+            />
+          </ClearableField>
         </label>
 
         <label className="block">

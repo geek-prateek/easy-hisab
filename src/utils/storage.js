@@ -1,4 +1,3 @@
-const PRODUCTS_STORAGE_KEY = 'product-register-items';
 const DAILY_ENTRIES_STORAGE_KEY = 'product-register-daily-entries';
 
 function loadArray(storageKey) {
@@ -14,14 +13,6 @@ function loadArray(storageKey) {
   } catch {
     return [];
   }
-}
-
-export function loadProducts() {
-  return loadArray(PRODUCTS_STORAGE_KEY);
-}
-
-export function saveProducts(products) {
-  window.localStorage.setItem(PRODUCTS_STORAGE_KEY, JSON.stringify(products));
 }
 
 export function loadDailyEntries() {
