@@ -84,8 +84,10 @@ function DailyEntryList({
         <button className="report-download-button" type="button" onClick={onDownload}>
           Download Excel Report
         </button>
+      </div>
 
-        <div className="rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 shadow-sm">
+      <div className="space-y-3">
+        <div className="sticky top-0 z-20 rounded-xl border border-sky-200 bg-sky-50 px-3 py-2.5 shadow-sm">
           <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
             <p className="text-sm font-semibold text-sky-900">
               Grand Total ({summary.itemCount} {itemLabel})
@@ -95,9 +97,7 @@ function DailyEntryList({
             </p>
           </div>
         </div>
-      </div>
 
-      <div className="space-y-3">
         {entries.length === 0 ? (
           <div className="rounded-lg border border-dashed border-stone-300 px-4 py-6 text-center text-base text-stone-600">
             No products found.

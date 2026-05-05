@@ -56,23 +56,23 @@ function App() {
   const [entryFilterDate, setEntryFilterDate] = useState('');
   const [entryFilterType, setEntryFilterType] = useState('');
   const [editingEntryId, setEditingEntryId] = useState(null);
-  const [message, setMessage] = useState('');
+  const [notice, setNotice] = useState(null);
 
   useEffect(() => {
     saveDailyEntries(dailyEntries);
   }, [dailyEntries]);
 
   useEffect(() => {
-    if (!message) {
+    if (!notice?.text) {
       return undefined;
     }
 
     const timer = window.setTimeout(() => {
-      setMessage('');
+      setNotice(null);
     }, 2400);
 
     return () => window.clearTimeout(timer);
-  }, [message]);
+  }, [notice]);
 
   const filteredDailyEntries = useMemo(() => {
     const searchText = entrySearchValue.trim().toLowerCase();
@@ -110,10 +110,21 @@ function App() {
     setEditingEntryId(null);
   }
 
+  function scrollToTop() {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
   function openDailyTab() {
     resetDailyForm();
-    setMessage('');
+    setNotice(null);
     setActiveTab('daily');
+    scrollToTop();
+  }
+
+  function openViewTab() {
+    setNotice(null);
+    setActiveTab('view');
+    scrollToTop();
   }
 
   function handleDailyChange(event) {
@@ -136,7 +147,10 @@ function App() {
       const value = dailyForm[fieldName];
 
       if (String(value ?? '').trim() === '') {
-        setMessage(`${label} is not added properly.`);
+        setNotice({
+          tone: 'error',
+          text: `${label} is not added properly.`,
+        });
         return false;
       }
     }
@@ -184,7 +198,10 @@ function App() {
     });
 
     resetDailyForm();
-    setMessage('Product Saved succesfully');
+    setNotice({
+      tone: 'success',
+      text: 'Entry Saved Successfully!',
+    });
   }
 
   function handleEntryEdit(entry) {
@@ -197,9 +214,9 @@ function App() {
       gst: String(entry.gst),
     });
     setEditingEntryId(entry.id);
-    setMessage('');
+    setNotice(null);
     setActiveTab('daily');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    scrollToTop();
   }
 
   function handleEntryDelete(entry) {
@@ -264,46 +281,28 @@ function App() {
 
   return (
     <main className="min-h-screen bg-slate-50">
-      <div className="mx-auto flex min-h-screen w-full max-w-md flex-col px-4 py-4 sm:px-5">
+      <div className="mx-auto flex min-h-screen w-full max-w-md flex-col px-4 py-4 pb-24 sm:px-5 sm:pb-24">
         <header className="mb-4">
           <h1 className="text-2xl font-extrabold text-stone-900">Product Price Register</h1>
           <p className="mt-1 text-sm text-stone-600">Simple pricing for your shop.</p>
         </header>
 
-        <nav className="mb-4 grid grid-cols-2 gap-3">
-          <button
-            type="button"
-            className={`min-h-14 rounded-lg px-4 text-base font-bold transition ${
-              activeTab === 'daily'
-                ? 'bg-emerald-600 text-white'
-                : 'bg-white text-stone-800 ring-1 ring-stone-200'
-            }`}
-            onClick={openDailyTab}
-          >
-            Daily Entry
-          </button>
-          <button
-            type="button"
-            className={`min-h-14 rounded-lg px-4 text-base font-bold transition ${
-              activeTab === 'view'
-                ? 'bg-emerald-600 text-white'
-                : 'bg-white text-stone-800 ring-1 ring-stone-200'
-            }`}
-            onClick={() => {
-              setMessage('');
-              setActiveTab('view');
-            }}
-          >
-            View Products
-          </button>
-        </nav>
-
-        {message ? (
+        {notice?.text ? (
           <div
-            className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-base font-medium text-emerald-900"
+            className={`pointer-events-none fixed inset-x-0 bottom-16 z-50 px-4 sm:bottom-16 sm:px-5 ${
+              notice.tone === 'error' ? 'text-rose-900' : 'text-emerald-900'
+            }`}
             role="status"
           >
-            {message}
+            <div
+              className={`mx-auto w-full max-w-md rounded-xl px-4 py-3 text-base font-semibold shadow-lg ring-1 ${
+                notice.tone === 'error'
+                  ? 'border border-rose-200 bg-rose-50 ring-rose-200'
+                  : 'border border-emerald-200 bg-emerald-50 ring-emerald-200'
+              }`}
+            >
+              {notice.text}
+            </div>
           </div>
         ) : null}
 
@@ -336,6 +335,33 @@ function App() {
             />
           ) : null}
         </div>
+      </div>
+
+      <div className="fixed inset-x-0 bottom-0 z-40">
+        <nav className="mx-auto grid w-full max-w-md grid-cols-2 gap-1.5 rounded-t-2xl border-x border-t border-stone-200 bg-white p-1.5 shadow-[0_-8px_24px_rgba(15,23,42,0.08)]">
+          <button
+            type="button"
+            className={`min-h-12 rounded-xl px-4 text-sm font-bold transition ${
+              activeTab === 'daily'
+                ? 'bg-emerald-600 text-white shadow-sm'
+                : 'bg-stone-50 text-stone-700'
+            }`}
+            onClick={openDailyTab}
+          >
+            Daily Entry
+          </button>
+          <button
+            type="button"
+            className={`min-h-12 rounded-xl px-4 text-sm font-bold transition ${
+              activeTab === 'view'
+                ? 'bg-emerald-600 text-white shadow-sm'
+                : 'bg-stone-50 text-stone-700'
+            }`}
+            onClick={openViewTab}
+          >
+            View Products
+          </button>
+        </nav>
       </div>
     </main>
   );
