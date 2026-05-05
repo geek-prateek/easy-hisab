@@ -81,7 +81,7 @@ function DailyEntryList({
           </label>
         </div>
 
-        <button className="secondary-button w-full" type="button" onClick={onDownload}>
+        <button className="report-download-button" type="button" onClick={onDownload}>
           Download Excel Report
         </button>
 
