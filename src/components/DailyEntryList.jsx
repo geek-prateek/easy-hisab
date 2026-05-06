@@ -69,10 +69,10 @@ function DailyEntryList({
 
   return (
     <section className="rounded-xl bg-white p-4 shadow-sm ring-1 ring-stone-200 sm:p-5">
-      <div className="mb-4 space-y-3">
+      <div className="mb-4 space-y-2">
         <h2 className="text-xl font-bold text-stone-900">View Products</h2>
 
-        <div className="grid grid-cols-1 gap-3">
+        <div className="grid grid-cols-1 gap-2">
           <label className="block">
             <span className="field-label">Product Name</span>
             <ClearableField

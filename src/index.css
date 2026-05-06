@@ -22,7 +22,7 @@
 
 @layer components {
   .field-label {
-    @apply mb-2 block text-base font-semibold text-stone-800;
+    @apply mb-1 block text-base font-semibold text-stone-800;
   }
 
   .text-input,

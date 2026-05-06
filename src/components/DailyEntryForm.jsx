@@ -21,7 +21,7 @@ function DailyEntryForm({
         <p className="mt-1 text-sm text-stone-600">Fill the details and save.</p>
       </div>
 
-      <form className="space-y-4" onSubmit={onSubmit}>
+      <form className="space-y-3" onSubmit={onSubmit}>
         <label className="block">
           <span className="field-label">Date</span>
           <ClearableField
