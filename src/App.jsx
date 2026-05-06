@@ -382,7 +382,7 @@ function App() {
             }`}
             onClick={openViewTab}
           >
-            <span className="text-base">👁️</span>
+            <span className="text-base">📊</span>
             <span>View Products</span>
           </button>
         </nav>
