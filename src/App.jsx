@@ -294,8 +294,18 @@ function App() {
     <main className="min-h-screen bg-slate-50">
       <div className="mx-auto flex min-h-screen w-full max-w-md flex-col px-4 py-4 pb-24 sm:px-5 sm:pb-24">
         <header className="mb-4">
-          <h1 className="text-2xl font-extrabold text-stone-900">Product Price Register</h1>
-          <p className="mt-1 text-sm text-stone-600">Simple pricing for your shop.</p>
+          <div className="flex items-center gap-3">
+            <img
+              src="/easy-hisab-icon.png"
+              alt="Easy Hisab logo"
+              className="h-10 w-10 rounded-xl border border-stone-200 bg-white object-contain"
+              loading="lazy"
+            />
+            <div>
+              <h1 className="text-2xl font-extrabold text-stone-900">Product Price Register</h1>
+              <p className="mt-1 text-sm text-stone-600">Smart Tracking for Modern Growth</p>
+            </div>
+          </div>
         </header>
 
         {notice?.text ? (
@@ -353,25 +363,27 @@ function App() {
         <nav className="mx-auto grid w-full max-w-md grid-cols-2 gap-1.5 rounded-t-2xl border-x border-t border-stone-200 bg-white p-1.5 shadow-[0_-8px_24px_rgba(15,23,42,0.08)]">
           <button
             type="button"
-            className={`min-h-12 rounded-xl px-4 text-sm font-bold transition ${
+            className={`flex min-h-12 items-center justify-center gap-2 rounded-xl px-3 text-sm font-bold transition ${
               activeTab === 'daily'
                 ? 'bg-emerald-600 text-white shadow-sm'
                 : 'bg-stone-50 text-stone-700'
             }`}
             onClick={openDailyTab}
           >
-            Daily Entry
+            <span className="text-base">📝</span>
+            <span>Daily Entry</span>
           </button>
           <button
             type="button"
-            className={`min-h-12 rounded-xl px-4 text-sm font-bold transition ${
+            className={`flex min-h-12 items-center justify-center gap-2 rounded-xl px-3 text-sm font-bold transition ${
               activeTab === 'view'
                 ? 'bg-emerald-600 text-white shadow-sm'
                 : 'bg-stone-50 text-stone-700'
             }`}
             onClick={openViewTab}
           >
-            View Products
+            <span className="text-base">👁️</span>
+            <span>View Products</span>
           </button>
         </nav>
       </div>
