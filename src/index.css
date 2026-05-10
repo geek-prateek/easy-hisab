@@ -57,4 +57,29 @@
   .clear-field-button {
     @apply absolute inset-y-0 my-auto inline-flex h-8 w-8 items-center justify-center rounded-full bg-stone-100 text-stone-600 transition hover:bg-stone-200 focus:outline-none focus:ring-2 focus:ring-emerald-200;
   }
+
+  /* Audit Module Components */
+  .system-stock-box {
+    @apply rounded-xl border-2 border-stone-200 bg-stone-50 p-4 text-center;
+  }
+
+  .audit-result-card {
+    @apply rounded-xl border-2 p-4 transition;
+  }
+
+  .audit-short-card {
+    @apply border-red-300 bg-red-50;
+  }
+
+  .audit-matched-card {
+    @apply border-green-300 bg-green-50;
+  }
+
+  .audit-extra-card {
+    @apply border-emerald-300 bg-emerald-50;
+  }
+
+  .audit-entry-card {
+    @apply rounded-xl border-l-4 p-4 transition;
+  }
 }

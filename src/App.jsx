@@ -2,8 +2,17 @@ import { useEffect, useMemo, useState } from 'react';
 import writeXlsxFile from 'write-excel-file/browser';
 import DailyEntryForm from './components/DailyEntryForm';
 import DailyEntryList from './components/DailyEntryList';
+import StockAuditForm from './components/StockAuditForm';
+import HistoryTabSwitch from './components/HistoryTabSwitch';
 import { ENTRY_TYPE_OPTIONS } from './constants';
-import { loadDailyEntries, saveDailyEntries } from './utils/storage';
+import { loadDailyEntries, saveDailyEntries, loadAuditEntries, saveAuditEntries } from './utils/storage';
+import {
+  calculateSystemStock,
+  calculateDifference,
+  determineDifferenceResult,
+  validateAuditForm,
+} from './utils/auditCalculations';
+import { exportAuditToExcel } from './utils/auditExport';
 
 function getTodayDate() {
   const today = new Date();
@@ -24,6 +33,19 @@ function createEmptyDailyForm() {
     gst: '5',
   };
 }
+
+function createEmptyAuditForm() {
+  return {
+    date: getTodayDate(),
+    productName: '',
+    opening: '',
+    purchase: '',
+    used: '',
+    actualCount: '',
+  };
+}
+
+const AUDIT_NUMBER_FIELDS = new Set(['opening', 'purchase', 'used', 'actualCount']);
 
 const typeLabels = Object.fromEntries(
   ENTRY_TYPE_OPTIONS.map((option) => [option.value, option.label]),
@@ -49,19 +71,33 @@ function createExcelDate(dateText) {
 }
 
 function App() {
-  const [activeTab, setActiveTab] = useState('daily');
+  const [activeTab, setActiveTab] = useState('billing');
+  const [historyView, setHistoryView] = useState('billing');
+  
+  // Billing entries and form
   const [dailyEntries, setDailyEntries] = useState(() => loadDailyEntries());
   const [dailyForm, setDailyForm] = useState(() => createEmptyDailyForm());
   const [entrySearchValue, setEntrySearchValue] = useState('');
   const [entryFilterDate, setEntryFilterDate] = useState('');
   const [entryFilterType, setEntryFilterType] = useState('');
   const [editingEntryId, setEditingEntryId] = useState(null);
+  
+  // Audit entries and form
+  const [auditEntries, setAuditEntries] = useState(() => loadAuditEntries());
+  const [auditForm, setAuditForm] = useState(() => createEmptyAuditForm());
+  const [auditEditingId, setAuditEditingId] = useState(null);
+  
+  // Common state
   const [notice, setNotice] = useState(null);
   const [isDownloading, setIsDownloading] = useState(false);
 
   useEffect(() => {
     saveDailyEntries(dailyEntries);
   }, [dailyEntries]);
+
+  useEffect(() => {
+    saveAuditEntries(auditEntries);
+  }, [auditEntries]);
 
   useEffect(() => {
     if (!notice?.text) {
@@ -111,20 +147,32 @@ function App() {
     setEditingEntryId(null);
   }
 
+  function resetAuditForm() {
+    setAuditForm(createEmptyAuditForm());
+    setAuditEditingId(null);
+  }
+
   function scrollToTop() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  function openDailyTab() {
+  function openBillingTab() {
     resetDailyForm();
     setNotice(null);
-    setActiveTab('daily');
+    setActiveTab('billing');
     scrollToTop();
   }
 
-  function openViewTab() {
+  function openAuditTab() {
+    resetAuditForm();
     setNotice(null);
-    setActiveTab('view');
+    setActiveTab('audit');
+    scrollToTop();
+  }
+
+  function openHistoryTab() {
+    setNotice(null);
+    setActiveTab('history');
     scrollToTop();
   }
 
@@ -236,6 +284,109 @@ function App() {
     }
   }
 
+  // Audit form handlers
+  function handleAuditChange(event) {
+    const { name, value } = event.target;
+
+    const nextValue = AUDIT_NUMBER_FIELDS.has(name)
+      ? value.replace(/[^\d]/g, '')
+      : value;
+
+    setAuditForm((currentForm) => ({
+      ...currentForm,
+      [name]: nextValue,
+    }));
+  }
+
+  function handleAuditFieldClear(fieldName) {
+    setAuditForm((currentForm) => ({
+      ...currentForm,
+      [fieldName]: '',
+    }));
+  }
+
+  function handleAuditSubmit(event) {
+    event.preventDefault();
+
+    const validation = validateAuditForm(auditForm);
+    if (!validation.isValid) {
+      setNotice({
+        tone: 'error',
+        text: validation.errors[0],
+      });
+      return;
+    }
+
+    const systemStock = calculateSystemStock(auditForm.opening, auditForm.purchase, auditForm.used);
+    const difference = calculateDifference(auditForm.used, auditForm.actualCount);
+    const result = determineDifferenceResult(difference);
+
+    const entryData = {
+      id: auditEditingId ?? crypto.randomUUID(),
+      date: auditForm.date,
+      productName: auditForm.productName.trim(),
+      opening: auditForm.opening === '' ? 0 : Number(auditForm.opening),
+      purchase: auditForm.purchase === '' ? 0 : Number(auditForm.purchase),
+      used: auditForm.used === '' ? 0 : Number(auditForm.used),
+      actualCount: auditForm.actualCount === '' ? 0 : Number(auditForm.actualCount),
+      systemStock,
+      difference,
+      result,
+      savedAt: new Date().toISOString(),
+    };
+
+    setAuditEntries((currentEntries) => {
+      if (auditEditingId) {
+        return currentEntries.map((entry) =>
+          entry.id === auditEditingId ? entryData : entry,
+        );
+      }
+
+      return [entryData, ...currentEntries];
+    });
+
+    resetAuditForm();
+    setNotice({
+      tone: 'success',
+      text: 'Audit Entry Saved Successfully!',
+    });
+  }
+
+  function handleAuditEdit(entry) {
+    setAuditForm({
+      date: entry.date,
+      productName: entry.productName,
+      opening: String(entry.opening),
+      purchase: String(entry.purchase),
+      used: String(entry.used),
+      actualCount: String(entry.actualCount),
+    });
+    setAuditEditingId(entry.id);
+    setNotice(null);
+    setActiveTab('audit');
+    scrollToTop();
+  }
+
+  function handleAuditDelete(entry) {
+    const confirmed = window.confirm(`Delete audit for "${entry.productName}"?`);
+
+    if (!confirmed) {
+      return;
+    }
+
+    setAuditEntries((currentEntries) =>
+      currentEntries.filter((item) => item.id !== entry.id),
+    );
+
+    if (auditEditingId === entry.id) {
+      resetAuditForm();
+    }
+  }
+
+  async function handleAuditDownload() {
+    await exportAuditToExcel(auditEntries, isDownloading, setIsDownloading);
+  }
+
   async function handleEntryDownload() {
     if (isDownloading) {
       return;
@@ -328,7 +479,7 @@ function App() {
         ) : null}
 
         <div className="pb-6">
-          {activeTab === 'daily' ? (
+          {activeTab === 'billing' ? (
             <DailyEntryForm
               form={dailyForm}
               onChange={handleDailyChange}
@@ -337,53 +488,84 @@ function App() {
             />
           ) : null}
 
-          {activeTab === 'view' ? (
-            <DailyEntryList
-              entries={filteredDailyEntries}
-              searchValue={entrySearchValue}
-              filterDate={entryFilterDate}
-              filterType={entryFilterType}
-              onSearchChange={(event) => setEntrySearchValue(event.target.value)}
-              onFilterDateChange={(event) => setEntryFilterDate(event.target.value)}
-              onFilterTypeChange={(event) => setEntryFilterType(event.target.value)}
-              onClearSearch={() => setEntrySearchValue('')}
-              onClearFilterDate={() => setEntryFilterDate('')}
-              onEdit={handleEntryEdit}
-              onDelete={handleEntryDelete}
-              onDownload={handleEntryDownload}
-              isDownloading={isDownloading}
-              summary={filteredEntriesSummary}
-              formatCurrency={currencyFormatter.format}
+          {activeTab === 'audit' ? (
+            <StockAuditForm
+              form={auditForm}
+              isEditing={auditEditingId !== null}
+              onChange={handleAuditChange}
+              onClearField={handleAuditFieldClear}
+              onSubmit={handleAuditSubmit}
+              onCancel={resetAuditForm}
+            />
+          ) : null}
+
+          {activeTab === 'history' ? (
+            <HistoryTabSwitch
+              historyView={historyView}
+              onHistoryViewChange={setHistoryView}
+              // Billing records
+              billingEntries={filteredDailyEntries}
+              billingSearchValue={entrySearchValue}
+              billingFilterDate={entryFilterDate}
+              billingFilterType={entryFilterType}
+              onBillingSearchChange={(event) => setEntrySearchValue(event.target.value)}
+              onBillingFilterDateChange={(event) => setEntryFilterDate(event.target.value)}
+              onBillingFilterTypeChange={(event) => setEntryFilterType(event.target.value)}
+              onBillingClearSearch={() => setEntrySearchValue('')}
+              onBillingClearFilterDate={() => setEntryFilterDate('')}
+              onBillingEdit={handleEntryEdit}
+              onBillingDelete={handleEntryDelete}
+              onBillingDownload={handleEntryDownload}
+              billingIsDownloading={isDownloading}
+              billingSummary={filteredEntriesSummary}
+              // Audit records
+              auditEntries={auditEntries}
+              onAuditEdit={handleAuditEdit}
+              onAuditDelete={handleAuditDelete}
+              onAuditDownload={handleAuditDownload}
+              auditIsDownloading={isDownloading}
             />
           ) : null}
         </div>
       </div>
 
       <div className="fixed inset-x-0 bottom-0 z-40">
-        <nav className="mx-auto grid w-full max-w-md grid-cols-2 gap-1.5 rounded-t-2xl border-x border-t border-stone-200 bg-white p-1.5 shadow-[0_-8px_24px_rgba(15,23,42,0.08)]">
+        <nav className="mx-auto grid w-full max-w-md grid-cols-3 gap-1.5 rounded-t-2xl border-x border-t border-stone-200 bg-white p-1.5 shadow-[0_-8px_24px_rgba(15,23,42,0.08)]">
           <button
             type="button"
-            className={`flex min-h-12 items-center justify-center gap-2 rounded-xl px-3 text-sm font-bold transition ${
-              activeTab === 'daily'
+            className={`flex min-h-12 items-center justify-center gap-1.5 rounded-xl px-2 text-xs font-bold transition ${
+              activeTab === 'billing'
                 ? 'bg-emerald-600 text-white shadow-sm'
                 : 'bg-stone-50 text-stone-700'
             }`}
-            onClick={openDailyTab}
+            onClick={openBillingTab}
           >
-            <span className="text-base">📝</span>
-            <span>Daily Entry</span>
+            <span className="text-base">💰</span>
+            <span>Billing</span>
           </button>
           <button
             type="button"
-            className={`flex min-h-12 items-center justify-center gap-2 rounded-xl px-3 text-sm font-bold transition ${
-              activeTab === 'view'
+            className={`flex min-h-12 items-center justify-center gap-1.5 rounded-xl px-2 text-xs font-bold transition ${
+              activeTab === 'audit'
                 ? 'bg-emerald-600 text-white shadow-sm'
                 : 'bg-stone-50 text-stone-700'
             }`}
-            onClick={openViewTab}
+            onClick={openAuditTab}
           >
-            <span className="text-base">📊</span>
-            <span>View Products</span>
+            <span className="text-base">📦</span>
+            <span>Stock Check</span>
+          </button>
+          <button
+            type="button"
+            className={`flex min-h-12 items-center justify-center gap-1.5 rounded-xl px-2 text-xs font-bold transition ${
+              activeTab === 'history'
+                ? 'bg-emerald-600 text-white shadow-sm'
+                : 'bg-stone-50 text-stone-700'
+            }`}
+            onClick={openHistoryTab}
+          >
+            <span className="text-base">📋</span>
+            <span>History</span>
           </button>
         </nav>
       </div>
