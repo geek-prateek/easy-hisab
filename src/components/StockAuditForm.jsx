@@ -5,6 +5,7 @@ import {
   determineDifferenceResult,
   calculateTotalAmount,
   calculateClosingAmount,
+  formatAuditValue,
 } from '../utils/auditCalculations';
 
 function StockAuditForm({
@@ -37,7 +38,6 @@ function StockAuditForm({
 
   return (
     <form onSubmit={onSubmit} className="space-y-3">
-      {/* Date */}
       <div>
         <label className="field-label">Date</label>
         <input
@@ -49,7 +49,6 @@ function StockAuditForm({
         />
       </div>
 
-      {/* Product Name */}
       <div>
         <label className="field-label">Product Name</label>
         <ClearableField
@@ -68,7 +67,6 @@ function StockAuditForm({
         </ClearableField>
       </div>
 
-      {/* Opening Amount */}
       <div>
         <label className="field-label">Opening Amount</label>
         <ClearableField
@@ -89,7 +87,6 @@ function StockAuditForm({
         </ClearableField>
       </div>
 
-      {/* Purchase Amount */}
       <div>
         <label className="field-label">Purchase Amount</label>
         <ClearableField
@@ -110,16 +107,14 @@ function StockAuditForm({
         </ClearableField>
       </div>
 
-      {/* Total Amount (Read-only) */}
       <div className="system-stock-box">
         <div className="field-label">Total Amount (Opening + Purchase)</div>
-        <div className="text-2xl font-bold text-stone-900">{totalAmount}</div>
+        <div className="text-2xl font-bold text-stone-900">{formatAuditValue(totalAmount)}</div>
         <div className="mt-1 text-xs text-stone-500">
           ({form.opening} + {form.purchase})
         </div>
       </div>
 
-      {/* Used Amount */}
       <div>
         <label className="field-label">Used Amount</label>
         <ClearableField
@@ -140,16 +135,14 @@ function StockAuditForm({
         </ClearableField>
       </div>
 
-      {/* Closing Amount (Read-only) */}
       <div className="system-stock-box">
         <div className="field-label">Closing Amount (Total - Used)</div>
-        <div className="text-2xl font-bold text-stone-900">{closingAmount}</div>
+        <div className="text-2xl font-bold text-stone-900">{formatAuditValue(closingAmount)}</div>
         <div className="mt-1 text-xs text-stone-500">
-          ({totalAmount} - {form.used})
+          ({formatAuditValue(totalAmount)} - {form.used})
         </div>
       </div>
 
-      {/* Slip Amount */}
       <div>
         <label className="field-label">Slip Amount</label>
         <ClearableField
@@ -170,7 +163,6 @@ function StockAuditForm({
         </ClearableField>
       </div>
 
-      {/* Difference Result Card - Only show when slip amount is entered */}
       {form.actualCount !== '' && (
         <div className={`audit-result-card ${
           result === 'short'
@@ -182,15 +174,14 @@ function StockAuditForm({
           <div className="text-center">
             <div className="text-sm font-semibold text-stone-600">Difference</div>
             <div className="mt-2 text-3xl font-bold">
-              {result === 'short' && `🔴 Short: ${Math.abs(difference)}`}
-              {result === 'extra' && `🟢 Extra: ${difference}`}
-              {result === 'matched' && '✅ Matched'}
+              {result === 'short' && `Short: ${formatAuditValue(Math.abs(difference))}`}
+              {result === 'extra' && `Extra: ${formatAuditValue(Math.abs(difference))}`}
+              {result === 'matched' && 'Matched'}
             </div>
           </div>
         </div>
       )}
 
-      {/* Action Buttons */}
       <div className="flex gap-3 pt-2">
         <button
           type="submit"

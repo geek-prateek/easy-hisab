@@ -12,6 +12,14 @@ function toAuditNumber(value) {
   return Number.isNaN(parsedValue) ? 0 : parsedValue;
 }
 
+export function roundAuditValue(value) {
+  return Math.round((toAuditNumber(value) + Number.EPSILON) * 1000) / 1000;
+}
+
+export function formatAuditValue(value) {
+  return roundAuditValue(value).toFixed(3);
+}
+
 /**
  * Calculate total amount (opening + purchase)
  * Formula: Opening Amount + Purchase Amount
@@ -20,7 +28,7 @@ function toAuditNumber(value) {
  * @returns {number} Total amount
  */
 export const calculateTotalAmount = (opening, purchase) => {
-  return toAuditNumber(opening) + toAuditNumber(purchase);
+  return roundAuditValue(toAuditNumber(opening) + toAuditNumber(purchase));
 };
 
 /**
@@ -31,7 +39,7 @@ export const calculateTotalAmount = (opening, purchase) => {
  * @returns {number} Closing amount
  */
 export const calculateClosingAmount = (total, used) => {
-  return toAuditNumber(total) - toAuditNumber(used);
+  return roundAuditValue(toAuditNumber(total) - toAuditNumber(used));
 };
 
 /**
@@ -43,7 +51,7 @@ export const calculateClosingAmount = (total, used) => {
  * @returns {number} System stock
  */
 export const calculateSystemStock = (opening, purchase, used) => {
-  return toAuditNumber(opening) + toAuditNumber(purchase) - toAuditNumber(used);
+  return roundAuditValue(toAuditNumber(opening) + toAuditNumber(purchase) - toAuditNumber(used));
 };
 
 /**
@@ -54,7 +62,7 @@ export const calculateSystemStock = (opening, purchase, used) => {
  * @returns {number} Difference
  */
 export const calculateDifference = (used, slipAmount) => {
-  return toAuditNumber(used) - toAuditNumber(slipAmount);
+  return roundAuditValue(toAuditNumber(used) - toAuditNumber(slipAmount));
 };
 
 /**
@@ -63,7 +71,7 @@ export const calculateDifference = (used, slipAmount) => {
  * @returns {string} 'short' | 'extra' | 'matched'
  */
 export const determineDifferenceResult = (difference) => {
-  const diff = toAuditNumber(difference);
+  const diff = roundAuditValue(difference);
   if (diff > 0) return 'short'; // Used Amount is more than Slip Amount, so stock is short
   if (diff < 0) return 'extra'; // Slip Amount is more than Used Amount, so there's extra stock
   return 'matched';
