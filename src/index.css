@@ -81,11 +81,13 @@
 
   .audit-entry-card {
     @apply rounded-xl border-l-4 p-3 shadow-sm transition;
-    will-change: transform;
+    contain: layout paint;
+    content-visibility: auto;
+    contain-intrinsic-size: 180px;
   }
 
   .audit-summary-bar {
-    @apply rounded-xl border border-stone-200 bg-white/95 px-3 py-2 shadow-sm backdrop-blur-sm;
+    @apply rounded-xl border border-stone-200 bg-white px-3 py-2 shadow-sm;
     will-change: transform;
   }
 

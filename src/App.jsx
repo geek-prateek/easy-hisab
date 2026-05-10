@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import writeXlsxFile from 'write-excel-file/browser';
 import DailyEntryForm from './components/DailyEntryForm';
 import DailyEntryList from './components/DailyEntryList';
@@ -81,8 +81,27 @@ function createExcelDate(dateText) {
   return new Date(Date.UTC(year, month - 1, day));
 }
 
+function isAppHistoryState(state) {
+  return Boolean(state && state.__easyHisab === true);
+}
+
+function createDefaultAppState() {
+  return {
+    activeTab: 'audit',
+    historyView: 'billing',
+    dailyForm: createEmptyDailyForm(),
+    auditForm: createEmptyAuditForm(),
+    editingEntryId: null,
+    auditEditingId: null,
+    entrySearchValue: '',
+    entryFilterDate: '',
+    entryFilterType: '',
+  };
+}
+
 function App() {
-  const [activeTab, setActiveTab] = useState('billing');
+  const isApplyingHistoryRef = useRef(false);
+  const [activeTab, setActiveTab] = useState('audit');
   const [historyView, setHistoryView] = useState('billing');
   
   // Billing entries and form
@@ -121,6 +140,83 @@ function App() {
 
     return () => window.clearTimeout(timer);
   }, [notice]);
+
+  function createAppHistorySnapshot(overrides = {}) {
+    return {
+      __easyHisab: true,
+      ...createDefaultAppState(),
+      activeTab,
+      historyView,
+      dailyForm,
+      auditForm,
+      editingEntryId,
+      auditEditingId,
+      entrySearchValue,
+      entryFilterDate,
+      entryFilterType,
+      ...overrides,
+    };
+  }
+
+  function applyAppHistorySnapshot(snapshot) {
+    const fallbackState = createDefaultAppState();
+
+    setActiveTab(snapshot.activeTab ?? fallbackState.activeTab);
+    setHistoryView(snapshot.historyView ?? fallbackState.historyView);
+    setDailyForm(snapshot.dailyForm ?? createEmptyDailyForm());
+    setAuditForm(snapshot.auditForm ?? createEmptyAuditForm());
+    setEditingEntryId(snapshot.editingEntryId ?? fallbackState.editingEntryId);
+    setAuditEditingId(snapshot.auditEditingId ?? fallbackState.auditEditingId);
+    setEntrySearchValue(snapshot.entrySearchValue ?? fallbackState.entrySearchValue);
+    setEntryFilterDate(snapshot.entryFilterDate ?? fallbackState.entryFilterDate);
+    setEntryFilterType(snapshot.entryFilterType ?? fallbackState.entryFilterType);
+    setNotice(null);
+  }
+
+  function commitAppNavigation(snapshot, options = {}) {
+    const { replace = false, shouldScroll = true } = options;
+
+    applyAppHistorySnapshot(snapshot);
+
+    if (!isApplyingHistoryRef.current) {
+      if (replace) {
+        window.history.replaceState(snapshot, '');
+      } else {
+        window.history.pushState(snapshot, '');
+      }
+    }
+
+    if (shouldScroll) {
+      scrollToTop();
+    }
+  }
+
+  useEffect(() => {
+    const initialSnapshot = isAppHistoryState(window.history.state)
+      ? window.history.state
+      : createAppHistorySnapshot();
+
+    commitAppNavigation(initialSnapshot, { replace: true, shouldScroll: false });
+
+    function handlePopState(event) {
+      if (!isAppHistoryState(event.state)) {
+        return;
+      }
+
+      isApplyingHistoryRef.current = true;
+      applyAppHistorySnapshot(event.state);
+      scrollToTop();
+      window.setTimeout(() => {
+        isApplyingHistoryRef.current = false;
+      }, 0);
+    }
+
+    window.addEventListener('popstate', handlePopState);
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, []);
 
   const filteredDailyEntries = useMemo(() => {
     const searchText = entrySearchValue.trim().toLowerCase();
@@ -168,23 +264,32 @@ function App() {
   }
 
   function openBillingTab() {
-    resetDailyForm();
-    setNotice(null);
-    setActiveTab('billing');
-    scrollToTop();
+    commitAppNavigation(createAppHistorySnapshot({
+      activeTab: 'billing',
+      dailyForm: createEmptyDailyForm(),
+      editingEntryId: null,
+    }));
   }
 
   function openAuditTab() {
-    resetAuditForm();
-    setNotice(null);
-    setActiveTab('audit');
-    scrollToTop();
+    commitAppNavigation(createAppHistorySnapshot({
+      activeTab: 'audit',
+      auditForm: createEmptyAuditForm(),
+      auditEditingId: null,
+    }));
   }
 
   function openHistoryTab() {
-    setNotice(null);
-    setActiveTab('history');
-    scrollToTop();
+    commitAppNavigation(createAppHistorySnapshot({
+      activeTab: 'history',
+    }));
+  }
+
+  function handleHistoryViewChange(nextHistoryView) {
+    commitAppNavigation(createAppHistorySnapshot({
+      activeTab: 'history',
+      historyView: nextHistoryView,
+    }), { shouldScroll: false });
   }
 
   function handleDailyChange(event) {
@@ -265,18 +370,18 @@ function App() {
   }
 
   function handleEntryEdit(entry) {
-    setDailyForm({
-      date: entry.date,
-      productName: entry.productName,
-      type: entry.type,
-      quantity: String(entry.quantity),
-      price: String(entry.price),
-      gst: String(entry.gst),
-    });
-    setEditingEntryId(entry.id);
-    setNotice(null);
-    setActiveTab('daily');
-    scrollToTop();
+    commitAppNavigation(createAppHistorySnapshot({
+      activeTab: 'billing',
+      dailyForm: {
+        date: entry.date,
+        productName: entry.productName,
+        type: entry.type,
+        quantity: String(entry.quantity),
+        price: String(entry.price),
+        gst: String(entry.gst),
+      },
+      editingEntryId: entry.id,
+    }));
   }
 
   function handleEntryDelete(entry) {
@@ -364,18 +469,18 @@ function App() {
   }
 
   function handleAuditEdit(entry) {
-    setAuditForm({
-      date: entry.date,
-      productName: entry.productName,
-      opening: String(entry.opening),
-      purchase: String(entry.purchase),
-      used: String(entry.used),
-      actualCount: String(entry.actualCount),
-    });
-    setAuditEditingId(entry.id);
-    setNotice(null);
-    setActiveTab('audit');
-    scrollToTop();
+    commitAppNavigation(createAppHistorySnapshot({
+      activeTab: 'audit',
+      auditForm: {
+        date: entry.date,
+        productName: entry.productName,
+        opening: String(entry.opening),
+        purchase: String(entry.purchase),
+        used: String(entry.used),
+        actualCount: String(entry.actualCount),
+      },
+      auditEditingId: entry.id,
+    }));
   }
 
   function handleAuditDelete(entry) {
@@ -513,7 +618,7 @@ function App() {
           {activeTab === 'history' ? (
             <HistoryTabSwitch
               historyView={historyView}
-              onHistoryViewChange={setHistoryView}
+              onHistoryViewChange={handleHistoryViewChange}
               // Billing records
               billingEntries={filteredDailyEntries}
               billingSearchValue={entrySearchValue}
