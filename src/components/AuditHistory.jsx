@@ -132,22 +132,22 @@ function AuditHistory({
                 <div>Used: {entry.used}</div>
               </div>
 
-              <div className="flex gap-2">
+              <div className="audit-actions-row">
                 <button
                   type="button"
                   onClick={() => onEdit(entry)}
-                  className="icon-action"
+                  className="audit-action-button audit-edit-button"
                   title="Edit"
                 >
-                  Edit
+                  Edit Entry
                 </button>
                 <button
                   type="button"
                   onClick={() => onDelete(entry)}
-                  className="icon-action"
+                  className="audit-action-button audit-delete-button"
                   title="Delete"
                 >
-                  Delete
+                  Delete Entry
                 </button>
               </div>
             </div>

@@ -82,4 +82,20 @@
   .audit-entry-card {
     @apply rounded-xl border-l-4 p-4 transition;
   }
+
+  .audit-actions-row {
+    @apply mt-4 grid grid-cols-2 gap-3 border-t border-white/80 pt-4;
+  }
+
+  .audit-action-button {
+    @apply inline-flex min-h-12 w-full items-center justify-center rounded-xl border px-4 py-3 text-sm font-semibold shadow-sm transition focus:outline-none focus:ring-2 active:scale-[0.99];
+  }
+
+  .audit-edit-button {
+    @apply border-amber-200 bg-amber-50 text-amber-900 hover:bg-amber-100 focus:ring-amber-200;
+  }
+
+  .audit-delete-button {
+    @apply border-rose-200 bg-rose-50 text-rose-900 hover:bg-rose-100 focus:ring-rose-200;
+  }
 }

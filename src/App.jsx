@@ -47,6 +47,17 @@ function createEmptyAuditForm() {
 
 const AUDIT_NUMBER_FIELDS = new Set(['opening', 'purchase', 'used', 'actualCount']);
 
+function sanitizeAuditNumberInput(value) {
+  const normalizedValue = value.replace(/,/g, '.').replace(/[^\d.]/g, '');
+  const decimalParts = normalizedValue.split('.');
+
+  if (decimalParts.length === 1) {
+    return normalizedValue;
+  }
+
+  return `${decimalParts[0]}.${decimalParts.slice(1).join('')}`;
+}
+
 const typeLabels = Object.fromEntries(
   ENTRY_TYPE_OPTIONS.map((option) => [option.value, option.label]),
 );
@@ -289,7 +300,7 @@ function App() {
     const { name, value } = event.target;
 
     const nextValue = AUDIT_NUMBER_FIELDS.has(name)
-      ? value.replace(/[^\d]/g, '')
+      ? sanitizeAuditNumberInput(value)
       : value;
 
     setAuditForm((currentForm) => ({

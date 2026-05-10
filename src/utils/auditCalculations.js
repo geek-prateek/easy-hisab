@@ -8,7 +8,8 @@ function toAuditNumber(value) {
     return 0;
   }
 
-  return Number(value);
+  const parsedValue = Number(value);
+  return Number.isNaN(parsedValue) ? 0 : parsedValue;
 }
 
 /**

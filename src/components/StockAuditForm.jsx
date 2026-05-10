@@ -80,10 +80,10 @@ function StockAuditForm({
             name="opening"
             value={form.opening}
             onChange={onChange}
-            placeholder="0"
+            placeholder="0.00"
             className="text-input"
-            inputMode="numeric"
-            pattern="[0-9]*"
+            inputMode="decimal"
+            pattern="[0-9]*[.]?[0-9]*"
             autoComplete="off"
           />
         </ClearableField>
@@ -101,10 +101,10 @@ function StockAuditForm({
             name="purchase"
             value={form.purchase}
             onChange={onChange}
-            placeholder="0"
+            placeholder="0.00"
             className="text-input"
-            inputMode="numeric"
-            pattern="[0-9]*"
+            inputMode="decimal"
+            pattern="[0-9]*[.]?[0-9]*"
             autoComplete="off"
           />
         </ClearableField>
@@ -131,10 +131,10 @@ function StockAuditForm({
             name="used"
             value={form.used}
             onChange={onChange}
-            placeholder="0"
+            placeholder="0.00"
             className="text-input"
-            inputMode="numeric"
-            pattern="[0-9]*"
+            inputMode="decimal"
+            pattern="[0-9]*[.]?[0-9]*"
             autoComplete="off"
           />
         </ClearableField>
@@ -161,10 +161,10 @@ function StockAuditForm({
             name="actualCount"
             value={form.actualCount}
             onChange={onChange}
-            placeholder="0"
+            placeholder="0.00"
             className="text-input"
-            inputMode="numeric"
-            pattern="[0-9]*"
+            inputMode="decimal"
+            pattern="[0-9]*[.]?[0-9]*"
             autoComplete="off"
           />
         </ClearableField>
