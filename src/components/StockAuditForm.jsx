@@ -172,11 +172,14 @@ function StockAuditForm({
               : 'audit-extra-card'
         }`}>
           <div className="text-center">
-            <div className="text-sm font-semibold text-stone-600">Difference</div>
+            <div className="text-sm font-semibold text-stone-600">Difference (Issued - Slip)</div>
             <div className="mt-2 text-3xl font-bold">
               {result === 'short' && `Short: ${formatAuditValue(Math.abs(difference))}`}
               {result === 'extra' && `Extra: ${formatAuditValue(Math.abs(difference))}`}
               {result === 'matched' && 'Matched'}
+            </div>
+            <div className="mt-1 text-xs text-stone-500">
+              ({form.used} - {form.actualCount})
             </div>
           </div>
         </div>
