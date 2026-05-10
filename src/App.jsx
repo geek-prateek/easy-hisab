@@ -569,7 +569,7 @@ function App() {
               loading="lazy"
             />
             <div>
-              <h1 className="text-2xl font-extrabold text-stone-900">Product Price Register</h1>
+              <h1 className="text-2xl font-extrabold text-stone-900">Stock & Price Ledger</h1>
               <p className="mt-1 text-sm text-stone-600">Smart Tracking for Modern Growth</p>
             </div>
           </div>

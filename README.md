@@ -1,4 +1,4 @@
-# Product Price Register
+# Stock & Price Ledger
 
 Ultra-simple mobile-first web app for managing textile product pricing and daily stock-in / stock-out entries without Excel.
 
