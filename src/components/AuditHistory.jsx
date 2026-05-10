@@ -135,11 +135,11 @@ function AuditHistory({
 
               <div className="mb-2 grid grid-cols-2 gap-2 text-sm">
                 <div className="rounded-lg bg-white/55 p-2">
-                  <div className="text-xs font-semibold text-stone-600">Closing Balance</div>
+                  <div className="text-xs font-semibold text-stone-600">Closing Stock</div>
                   <div className="mt-1 font-bold text-stone-900">{entry.systemStock}</div>
                 </div>
                 <div className="rounded-lg bg-white/55 p-2">
-                  <div className="text-xs font-semibold text-stone-600">Slip Amount</div>
+                  <div className="text-xs font-semibold text-stone-600">Slip Stock</div>
                   <div className="mt-1 font-bold text-stone-900">{entry.actualCount}</div>
                 </div>
               </div>
@@ -147,7 +147,7 @@ function AuditHistory({
               <div className="mb-2 grid grid-cols-3 gap-2 text-[11px] leading-4 text-stone-700">
                 <div>Opening: {entry.opening}</div>
                 <div>Purchase: {entry.purchase}</div>
-                <div>Used: {entry.used}</div>
+                <div>Issued: {entry.used}</div>
               </div>
 
               <div className="audit-actions-row">

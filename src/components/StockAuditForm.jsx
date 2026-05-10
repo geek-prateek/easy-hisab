@@ -68,7 +68,7 @@ function StockAuditForm({
       </div>
 
       <div>
-        <label className="field-label">Opening Amount</label>
+        <label className="field-label">Opening Stock</label>
         <ClearableField
           hasValue={form.opening !== ''}
           onClear={() => onClearField('opening')}
@@ -88,7 +88,7 @@ function StockAuditForm({
       </div>
 
       <div>
-        <label className="field-label">Purchase Amount</label>
+        <label className="field-label">Purchase Stock</label>
         <ClearableField
           hasValue={form.purchase !== ''}
           onClear={() => onClearField('purchase')}
@@ -108,7 +108,7 @@ function StockAuditForm({
       </div>
 
       <div className="system-stock-box">
-        <div className="field-label">Total Amount (Opening + Purchase)</div>
+        <div className="field-label">Total Stock (Opening + Purchase)</div>
         <div className="text-2xl font-bold text-stone-900">{formatAuditValue(totalAmount)}</div>
         <div className="mt-1 text-xs text-stone-500">
           ({form.opening} + {form.purchase})
@@ -116,7 +116,7 @@ function StockAuditForm({
       </div>
 
       <div>
-        <label className="field-label">Used Amount</label>
+        <label className="field-label">Issued Stock</label>
         <ClearableField
           hasValue={form.used !== ''}
           onClear={() => onClearField('used')}
@@ -136,7 +136,7 @@ function StockAuditForm({
       </div>
 
       <div className="system-stock-box">
-        <div className="field-label">Closing Amount (Total - Used)</div>
+        <div className="field-label">Closing Stock (Total - Issued)</div>
         <div className="text-2xl font-bold text-stone-900">{formatAuditValue(closingAmount)}</div>
         <div className="mt-1 text-xs text-stone-500">
           ({formatAuditValue(totalAmount)} - {form.used})
@@ -144,7 +144,7 @@ function StockAuditForm({
       </div>
 
       <div>
-        <label className="field-label">Slip Amount</label>
+        <label className="field-label">Slip Stock</label>
         <ClearableField
           hasValue={form.actualCount !== ''}
           onClear={() => onClearField('actualCount')}
