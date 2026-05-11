@@ -6,21 +6,38 @@ function HistoryTabSwitch({
   onHistoryViewChange,
   // Billing records
   billingEntries,
+  billingVisibleEntries,
+  billingTotalEntriesCount,
   billingSearchValue,
-  billingFilterDate,
-  billingFilterType,
+  billingFilterFromDate,
+  billingFilterToDate,
+  billingTypeFilter,
   onBillingSearchChange,
-  onBillingFilterDateChange,
-  onBillingFilterTypeChange,
+  onBillingFilterFromDateChange,
+  onBillingFilterToDateChange,
+  onBillingTypeFilterChange,
   onBillingClearSearch,
-  onBillingClearFilterDate,
+  onBillingClearFilterFromDate,
+  onBillingClearFilterToDate,
   onBillingEdit,
   onBillingDelete,
   onBillingDownload,
   billingIsDownloading,
-  billingSummary,
   // Audit records
   auditEntries,
+  auditVisibleEntries,
+  auditTotalEntriesCount,
+  auditSearchValue,
+  auditFilterFromDate,
+  auditFilterToDate,
+  auditStatusFilter,
+  onAuditSearchChange,
+  onAuditFilterFromDateChange,
+  onAuditFilterToDateChange,
+  onAuditStatusFilterChange,
+  onAuditClearSearch,
+  onAuditClearFilterFromDate,
+  onAuditClearFilterToDate,
   onAuditEdit,
   onAuditDelete,
   onAuditDownload,
@@ -58,19 +75,23 @@ function HistoryTabSwitch({
       {historyView === 'billing' && (
         <DailyEntryList
           entries={billingEntries}
+          visibleEntries={billingVisibleEntries}
+          totalEntriesCount={billingTotalEntriesCount}
           searchValue={billingSearchValue}
-          filterDate={billingFilterDate}
-          filterType={billingFilterType}
+          filterFromDate={billingFilterFromDate}
+          filterToDate={billingFilterToDate}
+          typeFilter={billingTypeFilter}
           onSearchChange={onBillingSearchChange}
-          onFilterDateChange={onBillingFilterDateChange}
-          onFilterTypeChange={onBillingFilterTypeChange}
+          onFilterFromDateChange={onBillingFilterFromDateChange}
+          onFilterToDateChange={onBillingFilterToDateChange}
+          onTypeFilterChange={onBillingTypeFilterChange}
           onClearSearch={onBillingClearSearch}
-          onClearFilterDate={onBillingClearFilterDate}
+          onClearFilterFromDate={onBillingClearFilterFromDate}
+          onClearFilterToDate={onBillingClearFilterToDate}
           onEdit={onBillingEdit}
           onDelete={onBillingDelete}
           onDownload={onBillingDownload}
           isDownloading={billingIsDownloading}
-          summary={billingSummary}
           formatCurrency={(value) =>
             new Intl.NumberFormat('en-IN', {
               minimumFractionDigits: 2,
@@ -83,6 +104,19 @@ function HistoryTabSwitch({
       {historyView === 'audit' && (
         <AuditHistory
           entries={auditEntries}
+          visibleEntries={auditVisibleEntries}
+          totalEntriesCount={auditTotalEntriesCount}
+          searchValue={auditSearchValue}
+          filterFromDate={auditFilterFromDate}
+          filterToDate={auditFilterToDate}
+          statusFilter={auditStatusFilter}
+          onSearchChange={onAuditSearchChange}
+          onFilterFromDateChange={onAuditFilterFromDateChange}
+          onFilterToDateChange={onAuditFilterToDateChange}
+          onStatusFilterChange={onAuditStatusFilterChange}
+          onClearSearch={onAuditClearSearch}
+          onClearFilterFromDate={onAuditClearFilterFromDate}
+          onClearFilterToDate={onAuditClearFilterToDate}
           onEdit={onAuditEdit}
           onDelete={onAuditDelete}
           onDownload={onAuditDownload}

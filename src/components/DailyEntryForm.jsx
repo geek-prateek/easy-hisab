@@ -3,9 +3,11 @@ import ClearableField from './ClearableField';
 
 function DailyEntryForm({
   form,
+  isEditing,
   onChange,
   onSubmit,
   onClearField,
+  onCancel,
 }) {
   const quantity = Number(form.quantity || 0);
   const price = Number(form.price || 0);
@@ -146,9 +148,21 @@ function DailyEntryForm({
           </div>
         </div>
 
-        <button className="primary-button" type="submit">
-          Save
-        </button>
+        <div className={isEditing ? 'grid grid-cols-[7fr_3fr] gap-3 pt-2' : 'pt-2'}>
+          <button className="primary-button" type="submit">
+            {isEditing ? 'Update Entry' : 'Save'}
+          </button>
+
+          {isEditing ? (
+            <button
+              type="button"
+              onClick={onCancel}
+              className="secondary-button min-h-14 w-full font-bold"
+            >
+              Close
+            </button>
+          ) : null}
+        </div>
       </form>
     </section>
   );

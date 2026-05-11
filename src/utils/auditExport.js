@@ -16,6 +16,33 @@ export function formatDateForDisplay(dateText) {
   return `${String(day).padStart(2, '0')}/${String(month).padStart(2, '0')}/${year}`;
 }
 
+export function getReportDateRangeLabel(entries) {
+  if (!entries || entries.length === 0) {
+    return 'No records';
+  }
+
+  const availableDates = entries
+    .map((entry) => entry.date)
+    .filter(Boolean);
+
+  if (availableDates.length === 0) {
+    return 'No records';
+  }
+
+  const fromDate = availableDates.reduce((earliest, current) => (
+    current < earliest ? current : earliest
+  ));
+  const toDate = availableDates.reduce((latest, current) => (
+    current > latest ? current : latest
+  ));
+
+  if (fromDate === toDate) {
+    return formatDateForDisplay(fromDate);
+  }
+
+  return `${formatDateForDisplay(fromDate)} to ${formatDateForDisplay(toDate)}`;
+}
+
 function getAuditResult(entry) {
   return entry.result || determineDifferenceResult(entry.difference);
 }
@@ -33,6 +60,9 @@ export async function exportAuditToExcel(auditEntries, isDownloading, setIsDownl
 
   try {
     const rows = [
+      [{ value: 'Audit Report', fontWeight: 'bold' }],
+      [{ value: `Date Range: ${getReportDateRangeLabel(auditEntries)}` }],
+      Array.from({ length: 10 }, () => ({ value: '' })),
       [
         { value: 'Date', fontWeight: 'bold' },
         { value: 'Product Name', fontWeight: 'bold' },

@@ -12,7 +12,7 @@ import {
   determineDifferenceResult,
   validateAuditForm,
 } from './utils/auditCalculations';
-import { exportAuditToExcel } from './utils/auditExport';
+import { exportAuditToExcel, getReportDateRangeLabel } from './utils/auditExport';
 
 function getTodayDate() {
   const today = new Date();
@@ -71,11 +71,6 @@ const fieldChecks = [
   ['gst', 'GST'],
 ];
 
-const currencyFormatter = new Intl.NumberFormat('en-IN', {
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 2,
-});
-
 function createExcelDate(dateText) {
   const [year, month, day] = dateText.split('-').map(Number);
   return new Date(Date.UTC(year, month - 1, day));
@@ -94,13 +89,19 @@ function createDefaultAppState() {
     editingEntryId: null,
     auditEditingId: null,
     entrySearchValue: '',
-    entryFilterDate: '',
-    entryFilterType: '',
+    entryFilterFromDate: '',
+    entryFilterToDate: '',
+    entryTypeFilter: 'all',
+    auditSearchValue: '',
+    auditFilterFromDate: '',
+    auditFilterToDate: '',
+    auditStatusFilter: 'all',
   };
 }
 
 function App() {
   const isApplyingHistoryRef = useRef(false);
+  const editReturnRef = useRef(null);
   const [activeTab, setActiveTab] = useState('audit');
   const [historyView, setHistoryView] = useState('billing');
   
@@ -108,14 +109,19 @@ function App() {
   const [dailyEntries, setDailyEntries] = useState(() => loadDailyEntries());
   const [dailyForm, setDailyForm] = useState(() => createEmptyDailyForm());
   const [entrySearchValue, setEntrySearchValue] = useState('');
-  const [entryFilterDate, setEntryFilterDate] = useState('');
-  const [entryFilterType, setEntryFilterType] = useState('');
+  const [entryFilterFromDate, setEntryFilterFromDate] = useState('');
+  const [entryFilterToDate, setEntryFilterToDate] = useState('');
+  const [entryTypeFilter, setEntryTypeFilter] = useState('all');
   const [editingEntryId, setEditingEntryId] = useState(null);
   
   // Audit entries and form
   const [auditEntries, setAuditEntries] = useState(() => loadAuditEntries());
   const [auditForm, setAuditForm] = useState(() => createEmptyAuditForm());
   const [auditEditingId, setAuditEditingId] = useState(null);
+  const [auditSearchValue, setAuditSearchValue] = useState('');
+  const [auditFilterFromDate, setAuditFilterFromDate] = useState('');
+  const [auditFilterToDate, setAuditFilterToDate] = useState('');
+  const [auditStatusFilter, setAuditStatusFilter] = useState('all');
   
   // Common state
   const [notice, setNotice] = useState(null);
@@ -152,8 +158,13 @@ function App() {
       editingEntryId,
       auditEditingId,
       entrySearchValue,
-      entryFilterDate,
-      entryFilterType,
+      entryFilterFromDate,
+      entryFilterToDate,
+      entryTypeFilter,
+      auditSearchValue,
+      auditFilterFromDate,
+      auditFilterToDate,
+      auditStatusFilter,
       ...overrides,
     };
   }
@@ -168,8 +179,27 @@ function App() {
     setEditingEntryId(snapshot.editingEntryId ?? fallbackState.editingEntryId);
     setAuditEditingId(snapshot.auditEditingId ?? fallbackState.auditEditingId);
     setEntrySearchValue(snapshot.entrySearchValue ?? fallbackState.entrySearchValue);
-    setEntryFilterDate(snapshot.entryFilterDate ?? fallbackState.entryFilterDate);
-    setEntryFilterType(snapshot.entryFilterType ?? fallbackState.entryFilterType);
+    setEntryFilterFromDate(
+      snapshot.entryFilterFromDate
+      ?? snapshot.entryFilterDate
+      ?? fallbackState.entryFilterFromDate,
+    );
+    setEntryFilterToDate(
+      snapshot.entryFilterToDate
+      ?? snapshot.entryFilterDate
+      ?? fallbackState.entryFilterToDate,
+    );
+    setEntryTypeFilter(
+      (
+        snapshot.entryTypeFilter
+        ?? snapshot.entryFilterType
+        ?? fallbackState.entryTypeFilter
+      ) || fallbackState.entryTypeFilter,
+    );
+    setAuditSearchValue(snapshot.auditSearchValue ?? fallbackState.auditSearchValue);
+    setAuditFilterFromDate(snapshot.auditFilterFromDate ?? fallbackState.auditFilterFromDate);
+    setAuditFilterToDate(snapshot.auditFilterToDate ?? fallbackState.auditFilterToDate);
+    setAuditStatusFilter(snapshot.auditStatusFilter ?? fallbackState.auditStatusFilter);
     setNotice(null);
   }
 
@@ -225,10 +255,10 @@ function App() {
       .filter((entry) => {
         const matchesSearch = !searchText
           || entry.productName.toLowerCase().includes(searchText);
-        const matchesDate = !entryFilterDate || entry.date === entryFilterDate;
-        const matchesType = !entryFilterType || entry.type === entryFilterType;
+        const matchesFromDate = !entryFilterFromDate || entry.date >= entryFilterFromDate;
+        const matchesToDate = !entryFilterToDate || entry.date <= entryFilterToDate;
 
-        return matchesSearch && matchesDate && matchesType;
+        return matchesSearch && matchesFromDate && matchesToDate;
       })
       .sort((left, right) => {
         if (left.date !== right.date) {
@@ -237,17 +267,54 @@ function App() {
 
         return (right.savedAt || '').localeCompare(left.savedAt || '');
       });
-  }, [dailyEntries, entryFilterDate, entryFilterType, entrySearchValue]);
+  }, [dailyEntries, entryFilterFromDate, entryFilterToDate, entrySearchValue]);
 
-  const filteredEntriesSummary = useMemo(() => (
-    filteredDailyEntries.reduce(
+  const visibleBillingEntries = useMemo(() => {
+    if (entryTypeFilter === 'all') {
+      return filteredDailyEntries;
+    }
+
+    return filteredDailyEntries.filter((entry) => entry.type === entryTypeFilter);
+  }, [entryTypeFilter, filteredDailyEntries]);
+
+  const visibleBillingSummary = useMemo(() => (
+    visibleBillingEntries.reduce(
       (summary, entry) => ({
         itemCount: summary.itemCount + 1,
         grandTotal: Number((summary.grandTotal + Number(entry.finalAmount || 0)).toFixed(2)),
       }),
       { itemCount: 0, grandTotal: 0 },
     )
-  ), [filteredDailyEntries]);
+  ), [visibleBillingEntries]);
+
+  const filteredAuditEntries = useMemo(() => {
+    const searchText = auditSearchValue.trim().toLowerCase();
+
+    return auditEntries
+      .filter((entry) => {
+        const matchesSearch = !searchText
+          || entry.productName.toLowerCase().includes(searchText);
+        const matchesFromDate = !auditFilterFromDate || entry.date >= auditFilterFromDate;
+        const matchesToDate = !auditFilterToDate || entry.date <= auditFilterToDate;
+
+        return matchesSearch && matchesFromDate && matchesToDate;
+      })
+      .sort((left, right) => {
+        if (left.date !== right.date) {
+          return right.date.localeCompare(left.date);
+        }
+
+        return (right.savedAt || '').localeCompare(left.savedAt || '');
+      });
+  }, [auditEntries, auditFilterFromDate, auditFilterToDate, auditSearchValue]);
+
+  const visibleAuditEntries = useMemo(() => {
+    if (auditStatusFilter === 'all') {
+      return filteredAuditEntries;
+    }
+
+    return filteredAuditEntries.filter((entry) => entry.result === auditStatusFilter);
+  }, [auditStatusFilter, filteredAuditEntries]);
 
   function resetDailyForm() {
     setDailyForm(createEmptyDailyForm());
@@ -261,6 +328,31 @@ function App() {
 
   function scrollToTop() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function rememberEditReturn(snapshot) {
+    editReturnRef.current = {
+      snapshot,
+      scrollY: window.scrollY,
+    };
+  }
+
+  function returnToEditOrigin(fallbackSnapshot) {
+    const returnState = editReturnRef.current;
+    editReturnRef.current = null;
+
+    const targetSnapshot = returnState?.snapshot ?? fallbackSnapshot;
+
+    commitAppNavigation(targetSnapshot, { shouldScroll: false });
+
+    if (typeof returnState?.scrollY === 'number') {
+      window.requestAnimationFrame(() => {
+        window.scrollTo({
+          top: returnState.scrollY,
+          behavior: 'auto',
+        });
+      });
+    }
   }
 
   function openBillingTab() {
@@ -362,6 +454,23 @@ function App() {
       return [entryData, ...currentEntries];
     });
 
+    const wasEditing = editingEntryId !== null;
+
+    if (wasEditing) {
+      resetDailyForm();
+      returnToEditOrigin(createAppHistorySnapshot({
+        activeTab: 'history',
+        historyView: 'billing',
+        dailyForm: createEmptyDailyForm(),
+        editingEntryId: null,
+      }));
+      setNotice({
+        tone: 'success',
+        text: 'Billing entry updated successfully.',
+      });
+      return;
+    }
+
     resetDailyForm();
     setNotice({
       tone: 'success',
@@ -370,6 +479,8 @@ function App() {
   }
 
   function handleEntryEdit(entry) {
+    rememberEditReturn(createAppHistorySnapshot());
+
     commitAppNavigation(createAppHistorySnapshot({
       activeTab: 'billing',
       dailyForm: {
@@ -461,6 +572,23 @@ function App() {
       return [entryData, ...currentEntries];
     });
 
+    const wasEditing = auditEditingId !== null;
+
+    if (wasEditing) {
+      resetAuditForm();
+      returnToEditOrigin(createAppHistorySnapshot({
+        activeTab: 'history',
+        historyView: 'audit',
+        auditForm: createEmptyAuditForm(),
+        auditEditingId: null,
+      }));
+      setNotice({
+        tone: 'success',
+        text: 'Audit entry updated successfully.',
+      });
+      return;
+    }
+
     resetAuditForm();
     setNotice({
       tone: 'success',
@@ -469,6 +597,8 @@ function App() {
   }
 
   function handleAuditEdit(entry) {
+    rememberEditReturn(createAppHistorySnapshot());
+
     commitAppNavigation(createAppHistorySnapshot({
       activeTab: 'audit',
       auditForm: {
@@ -500,7 +630,15 @@ function App() {
   }
 
   async function handleAuditDownload() {
-    await exportAuditToExcel(auditEntries, isDownloading, setIsDownloading);
+    if (visibleAuditEntries.length === 0) {
+      setNotice({
+        tone: 'error',
+        text: 'No audit records match the selected filters.',
+      });
+      return;
+    }
+
+    await exportAuditToExcel(visibleAuditEntries, isDownloading, setIsDownloading);
   }
 
   async function handleEntryDownload() {
@@ -508,10 +646,21 @@ function App() {
       return;
     }
 
+    if (visibleBillingEntries.length === 0) {
+      setNotice({
+        tone: 'error',
+        text: 'No billing records match the selected filters.',
+      });
+      return;
+    }
+
     setIsDownloading(true);
 
     try {
       const rows = [
+        [{ value: 'Billing Report', fontWeight: 'bold' }],
+        [{ value: `Date Range: ${getReportDateRangeLabel(visibleBillingEntries)}` }],
+        Array.from({ length: 7 }, () => ({ value: '' })),
         [
           { value: 'Date', fontWeight: 'bold' },
           { value: 'Product', fontWeight: 'bold' },
@@ -521,7 +670,7 @@ function App() {
           { value: 'GST', fontWeight: 'bold' },
           { value: 'Final Amount', fontWeight: 'bold' },
         ],
-        ...filteredDailyEntries.map((entry) => [
+        ...visibleBillingEntries.map((entry) => [
           { type: Date, value: createExcelDate(entry.date), format: 'dd/mm/yyyy' },
           { type: String, value: entry.productName },
           { type: String, value: typeLabels[entry.type] },
@@ -543,14 +692,14 @@ function App() {
           { value: '' },
           {
             type: Number,
-            value: filteredEntriesSummary.grandTotal,
+            value: visibleBillingSummary.grandTotal,
             fontWeight: 'bold',
           },
         ],
       ];
 
       await writeXlsxFile(rows, {
-        sheet: 'Daily Report',
+        sheet: 'Billing Report',
       }).toFile('daily-report.xlsx');
     } finally {
       setIsDownloading(false);
@@ -598,9 +747,19 @@ function App() {
           {activeTab === 'billing' ? (
             <DailyEntryForm
               form={dailyForm}
+              isEditing={editingEntryId !== null}
               onChange={handleDailyChange}
               onClearField={handleDailyFieldClear}
               onSubmit={handleDailySubmit}
+              onCancel={() => {
+                resetDailyForm();
+                returnToEditOrigin(createAppHistorySnapshot({
+                  activeTab: 'history',
+                  historyView: 'billing',
+                  dailyForm: createEmptyDailyForm(),
+                  editingEntryId: null,
+                }));
+              }}
             />
           ) : null}
 
@@ -611,7 +770,15 @@ function App() {
               onChange={handleAuditChange}
               onClearField={handleAuditFieldClear}
               onSubmit={handleAuditSubmit}
-              onCancel={resetAuditForm}
+              onCancel={() => {
+                resetAuditForm();
+                returnToEditOrigin(createAppHistorySnapshot({
+                  activeTab: 'history',
+                  historyView: 'audit',
+                  auditForm: createEmptyAuditForm(),
+                  auditEditingId: null,
+                }));
+              }}
             />
           ) : null}
 
@@ -621,21 +788,38 @@ function App() {
               onHistoryViewChange={handleHistoryViewChange}
               // Billing records
               billingEntries={filteredDailyEntries}
+              billingVisibleEntries={visibleBillingEntries}
+              billingTotalEntriesCount={dailyEntries.length}
               billingSearchValue={entrySearchValue}
-              billingFilterDate={entryFilterDate}
-              billingFilterType={entryFilterType}
+              billingFilterFromDate={entryFilterFromDate}
+              billingFilterToDate={entryFilterToDate}
+              billingTypeFilter={entryTypeFilter}
               onBillingSearchChange={(event) => setEntrySearchValue(event.target.value)}
-              onBillingFilterDateChange={(event) => setEntryFilterDate(event.target.value)}
-              onBillingFilterTypeChange={(event) => setEntryFilterType(event.target.value)}
+              onBillingFilterFromDateChange={(event) => setEntryFilterFromDate(event.target.value)}
+              onBillingFilterToDateChange={(event) => setEntryFilterToDate(event.target.value)}
+              onBillingTypeFilterChange={setEntryTypeFilter}
               onBillingClearSearch={() => setEntrySearchValue('')}
-              onBillingClearFilterDate={() => setEntryFilterDate('')}
+              onBillingClearFilterFromDate={() => setEntryFilterFromDate('')}
+              onBillingClearFilterToDate={() => setEntryFilterToDate('')}
               onBillingEdit={handleEntryEdit}
               onBillingDelete={handleEntryDelete}
               onBillingDownload={handleEntryDownload}
               billingIsDownloading={isDownloading}
-              billingSummary={filteredEntriesSummary}
               // Audit records
-              auditEntries={auditEntries}
+              auditEntries={filteredAuditEntries}
+              auditVisibleEntries={visibleAuditEntries}
+              auditTotalEntriesCount={auditEntries.length}
+              auditSearchValue={auditSearchValue}
+              auditFilterFromDate={auditFilterFromDate}
+              auditFilterToDate={auditFilterToDate}
+              auditStatusFilter={auditStatusFilter}
+              onAuditSearchChange={(event) => setAuditSearchValue(event.target.value)}
+              onAuditFilterFromDateChange={(event) => setAuditFilterFromDate(event.target.value)}
+              onAuditFilterToDateChange={(event) => setAuditFilterToDate(event.target.value)}
+              onAuditStatusFilterChange={setAuditStatusFilter}
+              onAuditClearSearch={() => setAuditSearchValue('')}
+              onAuditClearFilterFromDate={() => setAuditFilterFromDate('')}
+              onAuditClearFilterToDate={() => setAuditFilterToDate('')}
               onAuditEdit={handleAuditEdit}
               onAuditDelete={handleAuditDelete}
               onAuditDownload={handleAuditDownload}

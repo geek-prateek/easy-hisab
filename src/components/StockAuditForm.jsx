@@ -185,7 +185,7 @@ function StockAuditForm({
         </div>
       )}
 
-      <div className="flex gap-3 pt-2">
+      <div className={isEditing ? 'grid grid-cols-[7fr_3fr] gap-3 pt-2' : 'pt-2'}>
         <button
           type="submit"
           className="primary-button"
@@ -196,9 +196,9 @@ function StockAuditForm({
           <button
             type="button"
             onClick={onCancel}
-            className="h-14 flex-1 rounded-xl bg-stone-200 text-sm font-bold text-stone-700 transition hover:bg-stone-300"
+            className="secondary-button min-h-14 w-full font-bold"
           >
-            Cancel
+            Close
           </button>
         )}
       </div>
